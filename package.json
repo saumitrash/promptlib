@@ -1,29 +1,60 @@
 {
-  "name": "promptlib",
+  "name": "@saumitrash/promptlib",
   "version": "0.1.0",
   "description": "Compose, type-check, and serialize LLM prompts. Zero dependencies.",
-  "type": "module",
+  "keywords": [
+    "llm",
+    "prompt",
+    "prompt-template",
+    "typescript",
+    "openai",
+    "chat",
+    "ai"
+  ],
+  "homepage": "https://github.com/saumitrash/promptlib#readme",
+  "bugs": {
+    "url": "https://github.com/saumitrash/promptlib/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/saumitrash/promptlib.git"
+  },
   "license": "MIT",
+  "author": "saumitrash",
+  "type": "module",
   "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
-    "prepublishOnly": "bun run typecheck && bun test && bun run build"
+    "prepublishOnly": "bun run typecheck && bun test && bun run build",
+    "check:package": "publint && attw --pack . --profile esm-only",
+    "smoke": "bun scripts/smoke.ts",
+    "changeset": "changeset"
   },
   "devDependencies": {
-    "@types/bun": "latest",
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@changesets/cli": "^3.0.3",
+    "@types/bun": "1.4.2",
+    "publint": "^0.3.24",
     "typescript": "^5.9.3"
   }
 }
