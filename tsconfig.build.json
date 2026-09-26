@@ -2,8 +2,8 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": false,
+    "target": "ES2022",
     "declaration": true,
-    "emitDeclarationOnly": true,
     "allowImportingTsExtensions": false,
     "outDir": "dist",
     "rootDir": "src"

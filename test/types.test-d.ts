@@ -1,6 +1,9 @@
 import {
   assistant,
   chatPrompt,
+  fromJSON,
+  registry,
+  toOpenAI,
   messages,
   prompt,
   system,
@@ -74,3 +77,25 @@ chatPrompt([system("Context: {{history}}"), messages("history")]);
 const wide: string = "runtime";
 chatPrompt([user(wide)]).format({ anything: 1 });
 assert<Equal<ChatVars<ReturnType<typeof user<string>>>, Record<string, Value | readonly Message[]>>>();
+
+const prompts = registry({ greet, chat, fixed });
+assert<Equal<ReturnType<typeof prompts.names>, ("greet" | "chat" | "fixed")[]>>();
+assert<Equal<ReturnType<typeof prompts.get<"greet">>, typeof greet>>();
+prompts.get("greet").format({ name: "Ada", role: "admin" });
+// @ts-expect-error autocomplete only offers registered names
+prompts.get("nope");
+// @ts-expect-error the fetched prompt keeps its variable types
+prompts.get("greet").format({ name: "Ada" });
+const runtimeName: string = "greet";
+if (prompts.has(runtimeName)) prompts.get(runtimeName);
+
+const loaded = fromJSON<typeof greet>(JSON.stringify(greet));
+loaded.format({ name: "Ada", role: "admin" });
+// @ts-expect-error the type argument restores variable checking
+loaded.format({ name: "Ada" });
+const untyped = fromJSON("{}");
+if (untyped.kind === "chat") untyped.format({ anything: "goes" });
+
+toOpenAI(chat.format({ persona: "p", question: "q", history: [] }), { systemRole: "developer" });
+// @ts-expect-error unknown system role
+toOpenAI([], { systemRole: "admin" });

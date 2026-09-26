@@ -14,3 +14,6 @@ export {
   type Part,
   type Role,
 } from "./chat.js";
+export { fromJSON, type AnyPrompt, type PromptJSON } from "./json.js";
+export { toOpenAI, type OpenAIMessage, type OpenAIOptions } from "./openai.js";
+export { registry, type Registry } from "./registry.js";

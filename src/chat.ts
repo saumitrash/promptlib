@@ -1,3 +1,4 @@
+import type { PromptJSON } from "./json.js";
 import {
   namesOf,
   parse,
@@ -74,6 +75,7 @@ export interface ChatPrompt<V> {
   readonly variables: readonly string[];
   format(...args: FormatArgs<V>): Message[];
   formatText(...args: FormatArgs<V>): string;
+  toJSON(): PromptJSON;
 }
 
 const LABELS: Record<Role, string> = { system: "System", user: "User", assistant: "Assistant" };
@@ -119,5 +121,6 @@ export function chatPrompt<const P extends readonly Part[]>(
       format(vars, options)
         .map((m) => `${LABELS[m.role]}: ${m.content}`)
         .join("\n\n"),
+    toJSON: () => ({ version: 1, kind: "chat", parts: parts.map((part) => ({ ...part })) }),
   };
 }
