@@ -81,9 +81,9 @@ export function render(
   segments: readonly Segment[],
   vars: Readonly<Record<string, unknown>>,
   options: FormatOptions,
+  reported = new Set<string>(),
 ): string {
   let out = "";
-  const reported = new Set<string>();
   for (const segment of segments) {
     if (typeof segment === "string") {
       out += segment;

@@ -1,4 +1,16 @@
-import { prompt, type Placeholders, type TemplateVars, type Value } from "../src/index.js";
+import {
+  assistant,
+  chatPrompt,
+  messages,
+  prompt,
+  system,
+  user,
+  type ChatVars,
+  type Message,
+  type Placeholders,
+  type TemplateVars,
+  type Value,
+} from "../src/index.js";
 
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
 const assert = <T extends true>() => {};
@@ -37,3 +49,28 @@ const long = prompt("line 0: {{v0}} line 1: {{v1}} line 2: {{v2}} line 3: {{v3}}
 long.format({} as Exclude<Parameters<typeof long.format>[0], undefined>);
 // @ts-expect-error a 300-placeholder template still reports missing keys
 long.format({ v0: 1 });
+
+const chat = chatPrompt([
+  system("You are a {{persona}}."),
+  messages("history"),
+  user("As {{persona}}, answer: {{question}}"),
+  assistant("Answer:"),
+]);
+assert<Equal<Parameters<typeof chat.format>[0], { persona: Value; question: Value; history: readonly Message[] }>>();
+const turns: Message[] = chat.format({ persona: "pirate", question: "why?", history: [] });
+const flat: string = chat.formatText({ persona: "pirate", question: "why?", history: [] });
+// @ts-expect-error missing "history"
+chat.format({ persona: "pirate", question: "why?" });
+// @ts-expect-error history must be messages
+chat.format({ persona: "pirate", question: "why?", history: "no" });
+// @ts-expect-error bad role in history
+chat.format({ persona: "pirate", question: "why?", history: [{ role: "robot", content: "" }] });
+
+chatPrompt([user("hi")]).format();
+
+// @ts-expect-error "history" is used as both a text variable and a messages slot
+chatPrompt([system("Context: {{history}}"), messages("history")]);
+
+const wide: string = "runtime";
+chatPrompt([user(wide)]).format({ anything: 1 });
+assert<Equal<ChatVars<ReturnType<typeof user<string>>>, Record<string, Value | readonly Message[]>>>();
