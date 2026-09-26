@@ -1,111 +1,66 @@
----
-description: Use Bun instead of Node.js, npm, pnpm, or vite.
-globs: "*.ts, *.tsx, *.html, *.css, *.js, *.jsx, package.json"
-alwaysApply: false
----
+# promptlib
 
-Default to using Bun instead of Node.js.
+A published TypeScript library for typed LLM prompt templates. Consumers run it on Node, Bun, Deno, browsers, and edge runtimes. Public API and usage live in `README.md`.
 
-- Use `bun <file>` instead of `node <file>` or `ts-node <file>`
-- Use `bun test` instead of `jest` or `vitest`
-- Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
-- Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
-- Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Use `bunx <package> <command>` instead of `npx <package> <command>`
-- Bun automatically loads .env, so don't use dotenv.
+## Tooling
 
-## APIs
+Use Bun for the dev loop: `bun install`, `bun test`, `bun run <script>`, `bunx`. Scripts are in `package.json`.
 
-- `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.
-- `bun:sqlite` for SQLite. Don't use `better-sqlite3`.
-- `Bun.redis` for Redis. Don't use `ioredis`.
-- `Bun.sql` for Postgres. Don't use `pg` or `postgres.js`.
-- `WebSocket` is built-in. Don't use `ws`.
-- Prefer `Bun.file` over `node:fs`'s readFile/writeFile
-- Bun.$`ls` instead of execa.
+Library code in `src/` is **portable**: plain ES2022 plus `console`. Bun, Node, and DOM APIs stay out of `src/`, including `Bun.file`. File I/O is the consumer's job.
 
-## Testing
+The package has **zero runtime dependencies**. Keep `dependencies` empty; dev tooling goes in `devDependencies`.
 
-Use `bun test` to run tests.
+## Workflow: tests first
 
-```ts#index.test.ts
-import { test, expect } from "bun:test";
+Every behavior change goes **red** before it goes green:
 
-test("hello world", () => {
-  expect(1).toBe(1);
-});
-```
+1. Write the test. Run it and watch it fail for the expected reason.
+2. Implement until it passes.
+3. Run `bun test` and `bun run typecheck`. Both must pass before a commit.
 
-## Frontend
+Two kinds of test:
 
-Use HTML imports with `Bun.serve()`. Don't use `vite`. HTML imports fully support React, CSS, Tailwind.
+- Runtime tests are `test/*.test.ts`, run by `bun test`. Coverage is on by default (`bunfig.toml`) and the run fails below 100% lines or functions. Cover a new branch with a test.
+- Type tests are `test/types.test-d.ts`, checked only by `tsc` (`bun run typecheck`), never by `bun test`. Use `assert<Equal<A, B>>()` for exact types and `// @ts-expect-error <reason>` for calls that must not compile. Any change to a public signature or a type-level helper gets a type test.
 
-Server:
+Tests call the public API from `src/index.ts`. To simulate an untyped caller (plain JS, or a prompt loaded from JSON), cast through the local `js()` helper in the test file.
 
-```ts#index.ts
-import index from "./index.html"
+## Architecture
 
-Bun.serve({
-  routes: {
-    "/": index,
-    "/api/users/:id": {
-      GET: (req) => {
-        return new Response(JSON.stringify({ id: req.params.id }));
-      },
-    },
-  },
-  // optional websocket support
-  websocket: {
-    open: (ws) => {
-      ws.send("Hello, world!");
-    },
-    message: (ws, message) => {
-      ws.send(message);
-    },
-    close: (ws) => {
-      // handle close
-    }
-  },
-  development: {
-    hmr: true,
-    console: true,
-  }
-})
-```
+| File | Owns |
+|---|---|
+| `src/template.ts` | `{{name}}` parsing (type-level `Placeholders` and runtime `parse`), rendering, missing-variable reporting |
+| `src/prompt.ts` | `prompt()`, the text prompt |
+| `src/chat.ts` | `chatPrompt()`, roles, `messages()` slots, chat variable types, name-conflict check |
+| `src/json.ts` | `PromptJSON`, `fromJSON()` validation, `AnyPrompt` |
+| `src/registry.ts` | `registry()`, name-based lookup |
+| `src/openai.ts` | `toOpenAI()` adapter |
+| `src/index.ts` | The public surface. Export every new public name here. |
 
-HTML files can import .tsx, .jsx or .js files directly and Bun's bundler will transpile & bundle automatically. `<link>` tags can point to stylesheets and Bun's CSS bundler will bundle.
+### Invariants
 
-```html#index.html
-<html>
-  <body>
-    <h1>Hello, world!</h1>
-    <script type="module" src="./frontend.tsx"></script>
-  </body>
-</html>
-```
+- **Lockstep parsers.** The type-level `Placeholders` and the runtime `parse` in `src/template.ts` implement one grammar: `{{` `}}` delimiters, `\{{` escape, trim of space/tab/newline/CR only. Change both together and add a runtime test and a type test for the case.
+- **Placeholder names** are identifiers (`[A-Za-z_][A-Za-z0-9_]*`). Invalid names throw at definition time, never at format time.
+- **Wide templates.** A template typed as `string` yields loose vars (`Record<string, ...>`). A template with no placeholders yields `NoVars` (`Record<string, never>`) so `format()` takes no arguments and rejects extra keys.
+- **One name, one variable.** A name repeated across messages is one key. A name used as both text and a `messages()` slot is a compile error (the message is carried in the `chatPrompt` parameter type so tsc prints it) and a definition-time throw.
+- **Missing values** (`undefined`, `null`, or an inherited key) go through `reportMissing`, once per name per `format` call. Default is warn and leave `{{name}}` in the output. Only own properties count as values (`Object.hasOwn`).
+- **Serialized shape.** `toJSON()` on each prompt returns `PromptJSON` with `version: 1`, and the chat `parts` are the same objects `system()`/`messages()` build. A breaking shape change bumps `version` and keeps `fromJSON` able to read version 1.
+- **Boundaries.** `fromJSON` is the only place that validates untrusted input. Internal code trusts its types.
+- **Errors** start with `[promptlib] `.
 
-With the following `frontend.tsx`:
+## Build and release
 
-```tsx#frontend.tsx
-import React from "react";
-import { createRoot } from "react-dom/client";
+`bun run build` runs `tsc -p tsconfig.build.json` and emits per-module ES2022 `.js` plus `.d.ts` into `dist/`. Keep `tsc` as the build. `bun build` honors the package's own `"sideEffects": false` and emitted an empty bundle, and `--no-bundle` fails with several entry points.
 
-// import .css files directly and it works
-import './index.css';
+Source imports use `.js` extensions (`./template.js`) so emitted files resolve under Node ESM and `moduleResolution: nodenext`.
 
-const root = createRoot(document.body);
+Before a release, prove the built artifact works outside Bun. Copy `package.json` and `dist/` into a scratch `node_modules/promptlib`, import it from a `.mjs` file under `node`, and typecheck a consumer file with `--module nodenext`.
 
-export default function Frontend() {
-  return <h1>Hello, world!</h1>;
-}
+## Roadmap context
 
-root.render(<Frontend />);
-```
+Deferred on purpose, so check with the user before starting any of these:
 
-Then, run index.ts
-
-```sh
-bun --hot ./index.ts
-```
-
-For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
+- Codegen CLI that scans a prompts directory and writes a typed registry.
+- Provider adapters beyond OpenAI.
+- Per-variable value types beyond `string | number | boolean`.
+- A filesystem entry point (`promptlib/fs`).
