@@ -56,7 +56,15 @@ Source imports use `.js` extensions (`./template.js`) so emitted files resolve u
 
 `bun run smoke` (after a build) proves the built artifact works outside Bun: it packs the tarball, installs it into a scratch project, runs a `.mjs` consumer under `node`, and typechecks a `.ts` consumer with `--module nodenext`. `bun run check:package` runs `publint` and `attw` on the packed package. CI (`.github/workflows/ci.yml`) runs both, the smoke test on each supported Node version.
 
-Versioning uses Changesets. A PR that changes published behavior adds one with `bun run changeset`. On `main`, `.github/workflows/version.yml` keeps a "Version Packages" PR open that bumps `package.json` and writes `CHANGELOG.md`. Publishing to npm and JSR is not wired up yet.
+`engines.node` in `package.json` and the Node matrix in `ci.yml` move together: the lowest version in the matrix is the lowest version `engines` claims.
+
+When bumping a GitHub Action, confirm the tag exists (`gh api repos/<owner>/<repo>/git/ref/tags/<tag>`). `changesets/action` publishes only full versions (`v2.1.2`), not a floating `v2`.
+
+Versioning uses Changesets. A PR that changes what consumers get (runtime behavior, public types, or package contents) adds one with `bun run changeset`. Docs, tests, and CI changes don't. On `main`, `.github/workflows/version.yml` keeps a "Version Packages" PR open that bumps `package.json` and writes `CHANGELOG.md`. That PR is opened with the workflow token, so CI doesn't run on it; admins merge it through the ruleset bypass. Publishing to npm and JSR is not wired up yet (issue #1).
+
+## Branches
+
+`main` is protected by a repository ruleset: every change lands through a PR, the four CI checks must pass, and force-push and deletion are blocked. Work on a branch, open a PR with `gh pr create`, and never push to `main`.
 
 ## Roadmap context
 
