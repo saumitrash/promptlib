@@ -1,11 +1,27 @@
 {
   "name": "promptlib",
-  "module": "index.ts",
+  "version": "0.1.0",
+  "description": "Compose, type-check, and serialize LLM prompts. Zero dependencies.",
   "type": "module",
-  "devDependencies": {
-    "@types/bun": "latest"
+  "license": "MIT",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
-  "peerDependencies": {
-    "typescript": "^5"
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "build": "rm -rf dist && bun build src/index.ts --outdir dist --target browser && tsc -p tsconfig.build.json",
+    "prepublishOnly": "bun run typecheck && bun test && bun run build"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.9.3"
   }
 }
