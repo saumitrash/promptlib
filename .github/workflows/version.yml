@@ -1,0 +1,30 @@
+# Opens (and keeps updated) a "Version Packages" PR from pending changesets.
+# Merging it bumps package.json and writes CHANGELOG.md. Publishing is not wired up yet.
+name: Version
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: version-${{ github.ref }}
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: bun install --frozen-lockfile
+      - uses: changesets/action@v2
+        with:
+          version-script: bun run changeset version

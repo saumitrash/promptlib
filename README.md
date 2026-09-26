@@ -4,8 +4,12 @@ Typed prompt templates for LLMs. Zero runtime dependencies. Runs anywhere modern
 
 The compiler reads the placeholders out of your template, so a missing or misspelled variable is a type error in your editor, not a surprise in production.
 
+```sh
+npm install @saumitrash/promptlib
+```
+
 ```ts
-import { prompt } from "promptlib";
+import { prompt } from "@saumitrash/promptlib";
 
 const greet = prompt("Hello {{name}}, your role is {{role}}.");
 
@@ -26,7 +30,7 @@ greet.format({ name: "Ada", role: "x", foo: 1 }); // type error: 'foo' does not 
 ## Chat prompts
 
 ```ts
-import { assistant, chatPrompt, messages, system, user } from "promptlib";
+import { assistant, chatPrompt, messages, system, user } from "@saumitrash/promptlib";
 
 const support = chatPrompt([
   system("You are a {{persona}}."),
@@ -58,7 +62,7 @@ greet.format(vars, { onMissing: "throw" });   // or "warn" (default), "ignore", 
 ## Loading prompts by name
 
 ```ts
-import { registry } from "promptlib";
+import { registry } from "@saumitrash/promptlib";
 
 export const prompts = registry({ greet, "support/triage": support });
 
@@ -73,7 +77,7 @@ prompts.names();
 Prompts serialize with `JSON.stringify`. `fromJSON` takes the string (or a parsed object) and validates it.
 
 ```ts
-import { fromJSON } from "promptlib";
+import { fromJSON } from "@saumitrash/promptlib";
 
 const json = JSON.stringify(greet);
 // {"version":1,"kind":"text","template":"Hello {{name}}, your role is {{role}}."}
@@ -87,7 +91,7 @@ The type argument is an unchecked claim, like the type you give `JSON.parse`. Wi
 ## Providers
 
 ```ts
-import { toOpenAI } from "promptlib";
+import { toOpenAI } from "@saumitrash/promptlib";
 
 openai.chat.completions.create({ model, messages: toOpenAI(support.format(vars)) });
 toOpenAI(msgs, { systemRole: "developer" }); // for models that take developer messages
@@ -107,6 +111,13 @@ bun install
 bun test           # runs tests with coverage; fails below 100% lines or functions
 bun run typecheck  # tsc, including the @ts-expect-error type tests in test/types.test-d.ts
 bun run build      # emits dist/ (ES2022 JS + .d.ts)
+bun run smoke      # installs the packed build into a scratch project and checks it under node
+bun run check:package  # publint + are-the-types-wrong
+bun run changeset  # describe a change for the next release
 ```
 
 New behavior starts with a failing test.
+
+## License
+
+[MIT](LICENSE)

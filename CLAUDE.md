@@ -1,6 +1,6 @@
 # promptlib
 
-A published TypeScript library for typed LLM prompt templates. Consumers run it on Node, Bun, Deno, browsers, and edge runtimes. Public API and usage live in `README.md`.
+A TypeScript library for typed LLM prompt templates, published as `@saumitrash/promptlib`. Consumers run it on Node, Bun, Deno, browsers, and edge runtimes. Public API and usage live in `README.md`.
 
 ## Tooling
 
@@ -54,7 +54,9 @@ Tests call the public API from `src/index.ts`. To simulate an untyped caller (pl
 
 Source imports use `.js` extensions (`./template.js`) so emitted files resolve under Node ESM and `moduleResolution: nodenext`.
 
-Before a release, prove the built artifact works outside Bun. Copy `package.json` and `dist/` into a scratch `node_modules/promptlib`, import it from a `.mjs` file under `node`, and typecheck a consumer file with `--module nodenext`.
+`bun run smoke` (after a build) proves the built artifact works outside Bun: it packs the tarball, installs it into a scratch project, runs a `.mjs` consumer under `node`, and typechecks a `.ts` consumer with `--module nodenext`. `bun run check:package` runs `publint` and `attw` on the packed package. CI (`.github/workflows/ci.yml`) runs both, the smoke test on each supported Node version.
+
+Versioning uses Changesets. A PR that changes published behavior adds one with `bun run changeset`. On `main`, `.github/workflows/version.yml` keeps a "Version Packages" PR open that bumps `package.json` and writes `CHANGELOG.md`. Publishing to npm and JSR is not wired up yet.
 
 ## Roadmap context
 
@@ -63,4 +65,4 @@ Deferred on purpose, so check with the user before starting any of these:
 - Codegen CLI that scans a prompts directory and writes a typed registry.
 - Provider adapters beyond OpenAI.
 - Per-variable value types beyond `string | number | boolean`.
-- A filesystem entry point (`promptlib/fs`).
+- A filesystem entry point (`@saumitrash/promptlib/fs`).
