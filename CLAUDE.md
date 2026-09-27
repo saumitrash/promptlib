@@ -30,7 +30,7 @@ Tests call the public API from `src/index.ts`. To simulate an untyped caller (pl
 | File | Owns |
 |---|---|
 | `src/template.ts` | `{{name}}` parsing (type-level `Placeholders` and runtime `parse`), rendering, missing-variable reporting |
-| `src/prompt.ts` | `prompt()`, the text prompt |
+| `src/prompt.ts` | `textPrompt()`, the text prompt |
 | `src/chat.ts` | `chatPrompt()`, roles, `messages()` slots, chat variable types, name-conflict check |
 | `src/json.ts` | `PromptJSON`, `fromJSON()` validation, `AnyPrompt` |
 | `src/registry.ts` | `registry()`, name-based lookup |

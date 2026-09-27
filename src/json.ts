@@ -1,5 +1,5 @@
 import { chatPrompt, type ChatPrompt, type Part } from "./chat.js";
-import { prompt, type TextPrompt } from "./prompt.js";
+import { textPrompt, type TextPrompt } from "./prompt.js";
 import type { Value } from "./template.js";
 import type { Message } from "./chat.js";
 
@@ -42,7 +42,7 @@ export function fromJSON<P extends AnyPrompt = AnyPrompt>(input: unknown): P {
   if (data.version !== 1) throw new Error(`[promptlib] Unsupported prompt version ${String(data.version)}`);
   if (data.kind === "text") {
     if (typeof data.template !== "string") return fail('"template" must be a string');
-    return prompt(data.template) as P;
+    return textPrompt(data.template) as P;
   }
   if (data.kind === "chat") {
     if (!Array.isArray(data.parts)) return fail('"parts" must be an array');

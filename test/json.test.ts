@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { assistant, chatPrompt, fromJSON, messages, prompt, system, user, type ChatPrompt, type TextPrompt } from "../src/index.js";
+import { assistant, chatPrompt, fromJSON, messages, textPrompt, system, user, type ChatPrompt, type TextPrompt } from "../src/index.js";
 
 describe("round-trip", () => {
   test("text prompts", () => {
-    const original = prompt("Hello {{name}}, \\{{literal}}");
+    const original = textPrompt("Hello {{name}}, \\{{literal}}");
     const loaded = fromJSON<typeof original>(JSON.stringify(original));
     expect(loaded.kind).toBe("text");
     expect(loaded.variables).toEqual(original.variables);

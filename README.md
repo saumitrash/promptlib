@@ -9,9 +9,9 @@ npm install @saumitrash/promptlib
 ```
 
 ```ts
-import { prompt } from "@saumitrash/promptlib";
+import { textPrompt } from "@saumitrash/promptlib";
 
-const greet = prompt("Hello {{name}}, your role is {{role}}.");
+const greet = textPrompt("Hello {{name}}, your role is {{role}}.");
 
 greet.format({ name: "Ada", role: "admin" }); // "Hello Ada, your role is admin."
 greet.format({ name: "Ada" });                // type error: 'role' is missing
