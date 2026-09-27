@@ -46,7 +46,7 @@ support.formatText(vars);
 ```
 
 - The same name in several messages is one variable, filled everywhere.
-- `messages("history")` is a slot for a `Message[]`, spliced in as is. History content is not treated as a template.
+- `messages("history")` is a slot for a `Message[]`, spliced in as is. History content is not treated as a template. An item that is not a `{ role, content }` message throws.
 - A name used as both a text placeholder and a slot is a type error, and throws at definition time.
 
 ## Missing variables

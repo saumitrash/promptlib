@@ -45,7 +45,7 @@ Tests call the public API from `src/index.ts`. To simulate an untyped caller (pl
 - **One name, one variable.** A name repeated across messages is one key. A name used as both text and a `messages()` slot is a compile error (the message is carried in the `chatPrompt` parameter type so tsc prints it) and a definition-time throw.
 - **Missing values** (`undefined`, `null`, or an inherited key) go through `reportMissing`, once per name per `format` call. Default is warn and leave `{{name}}` in the output. Only own properties count as values (`Object.hasOwn`).
 - **Serialized shape.** `toJSON()` on each prompt returns `PromptJSON` with `version: 1`, and the chat `parts` are the same objects `system()`/`messages()` build. A breaking shape change bumps `version` and keeps `fromJSON` able to read version 1.
-- **Boundaries.** `fromJSON` is the only place that validates untrusted input. Internal code trusts its types.
+- **Boundaries.** Untrusted input is validated in two places: `fromJSON` checks prompt JSON, and chat `format()` checks each `messages()` slot value is an array of `{ role, content }` messages. Internal code trusts its types.
 - **Errors** start with `[promptlib] `.
 
 ## Build and release

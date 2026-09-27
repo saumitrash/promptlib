@@ -68,6 +68,20 @@ describe("chatPrompt", () => {
     expect(() => js(chat).format({ history: "oops" })).toThrow('Variable "history" must be an array of messages');
   });
 
+  test.each([
+    ["null", null],
+    ["a string", "hi"],
+    ["a message without content", { role: "user" }],
+    ["a message with non-string content", { role: "user", content: 1 }],
+    ["an unknown role", { role: "tool", content: "hi" }],
+    ["an inherited role", { role: "toString", content: "hi" }],
+  ])("a slot given %s as an item throws", (_, item) => {
+    const chat = chatPrompt([messages("history")]);
+    expect(() => js(chat).format({ history: [history[0], item] })).toThrow(
+      '[promptlib] Variable "history" item 1 is not a message. Expected { role, content } with role system, user, or assistant.',
+    );
+  });
+
   test("a missing text variable is reported once across messages", () => {
     const chat = chatPrompt([system("{{a}}"), user("{{a}}")]);
     js(chat).format({});

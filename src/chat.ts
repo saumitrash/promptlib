@@ -80,6 +80,15 @@ export interface ChatPrompt<V> {
 
 const LABELS: Record<Role, string> = { system: "System", user: "User", assistant: "Assistant" };
 
+const isMessage = (x: unknown): x is Message =>
+  typeof x === "object" &&
+  x !== null &&
+  "role" in x &&
+  typeof x.role === "string" &&
+  Object.hasOwn(LABELS, x.role) &&
+  "content" in x &&
+  typeof x.content === "string";
+
 type Compiled = { role: Role; segments: Segment[] } | { slot: string };
 
 export function chatPrompt<const P extends readonly Part[]>(
@@ -106,6 +115,13 @@ export function chatPrompt<const P extends readonly Part[]>(
         return [];
       }
       if (!Array.isArray(history)) throw new TypeError(`[promptlib] Variable "${c.slot}" must be an array of messages`);
+      history.forEach((item: unknown, i) => {
+        if (!isMessage(item)) {
+          throw new TypeError(
+            `[promptlib] Variable "${c.slot}" item ${i} is not a message. Expected { role, content } with role system, user, or assistant.`,
+          );
+        }
+      });
       return history;
     });
   };
