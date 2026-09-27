@@ -30,8 +30,8 @@ Tests call the public API from `src/index.ts`. To simulate an untyped caller (pl
 | File | Owns |
 |---|---|
 | `src/template.ts` | `{{name}}` parsing (type-level `Placeholders` and runtime `parse`), rendering, missing-variable reporting |
-| `src/prompt.ts` | `prompt()`, the text prompt |
-| `src/chat.ts` | `chatPrompt()`, roles, `messages()` slots, chat variable types, name-conflict check |
+| `src/prompt.ts` | `textPrompt()`, the text prompt |
+| `src/chat.ts` | `chatPrompt()`, roles, message templates and their `format()`, `messages()` slots, chat variable types, name-conflict check |
 | `src/json.ts` | `PromptJSON`, `fromJSON()` validation, `AnyPrompt` |
 | `src/registry.ts` | `registry()`, name-based lookup |
 | `src/openai.ts` | `toOpenAI()` adapter |
@@ -44,8 +44,8 @@ Tests call the public API from `src/index.ts`. To simulate an untyped caller (pl
 - **Wide templates.** A template typed as `string` yields loose vars (`Record<string, ...>`). A template with no placeholders yields `NoVars` (`Record<string, never>`) so `format()` takes no arguments and rejects extra keys.
 - **One name, one variable.** A name repeated across messages is one key. A name used as both text and a `messages()` slot is a compile error (the message is carried in the `chatPrompt` parameter type so tsc prints it) and a definition-time throw.
 - **Missing values** (`undefined`, `null`, or an inherited key) go through `reportMissing`, once per name per `format` call. Default is warn and leave `{{name}}` in the output. Only own properties count as values (`Object.hasOwn`).
-- **Serialized shape.** `toJSON()` on each prompt returns `PromptJSON` with `version: 1`, and the chat `parts` are the same objects `system()`/`messages()` build. A breaking shape change bumps `version` and keeps `fromJSON` able to read version 1.
-- **Boundaries.** `fromJSON` is the only place that validates untrusted input. Internal code trusts its types.
+- **Serialized shape.** `toJSON()` on each prompt returns `PromptJSON` with `version: 1`, and the chat `parts` are plain data (`{ type, role, template }` or `{ type, name }`). `fromJSON` rebuilds message parts through `message()` so they get `format()` back. A breaking shape change bumps `version` and keeps `fromJSON` able to read version 1.
+- **Boundaries.** Untrusted input is validated in two places: `fromJSON` checks prompt JSON, and chat `format()` checks each `messages()` slot value is an array of `{ role, content }` messages. Internal code trusts its types.
 - **Errors** start with `[promptlib] `.
 
 ## Build and release

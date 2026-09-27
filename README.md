@@ -9,9 +9,9 @@ npm install @saumitrash/promptlib
 ```
 
 ```ts
-import { prompt } from "@saumitrash/promptlib";
+import { textPrompt } from "@saumitrash/promptlib";
 
-const greet = prompt("Hello {{name}}, your role is {{role}}.");
+const greet = textPrompt("Hello {{name}}, your role is {{role}}.");
 
 greet.format({ name: "Ada", role: "admin" }); // "Hello Ada, your role is admin."
 greet.format({ name: "Ada" });                // type error: 'role' is missing
@@ -46,8 +46,23 @@ support.formatText(vars);
 ```
 
 - The same name in several messages is one variable, filled everywhere.
-- `messages("history")` is a slot for a `Message[]`, spliced in as is. History content is not treated as a template.
+- `messages("history")` is a slot for a `Message[]`, spliced in as is. History content is not treated as a template. An item that is not a `{ role, content }` message throws.
 - A name used as both a text placeholder and a slot is a type error, and throws at definition time.
+
+To build history in code, call `.format()` on a message template. It returns one `Message`, with the same variable checking as a prompt.
+
+```ts
+support.format({
+  persona: "support agent",
+  question: "Where is my order?",
+  history: [
+    user("Hi, I'm {{name}}.").format({ name: "Ada" }),
+    assistant("Hi Ada, how can I help?").format(),
+  ],
+});
+```
+
+A template passed to a slot without `.format()` is a type error, and throws at runtime.
 
 ## Missing variables
 

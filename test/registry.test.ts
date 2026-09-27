@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
-import { chatPrompt, prompt, registry, user } from "../src/index.js";
+import { chatPrompt, textPrompt, registry, user } from "../src/index.js";
 
-const greet = prompt("Hello {{name}}");
+const greet = textPrompt("Hello {{name}}");
 const support = chatPrompt([user("Help with {{issue}}")]);
 const prompts = registry({ greet, "support/triage": support });
 

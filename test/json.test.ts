@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { assistant, chatPrompt, fromJSON, messages, prompt, system, user, type ChatPrompt, type TextPrompt } from "../src/index.js";
+import { assistant, chatPrompt, fromJSON, messages, textPrompt, system, user, type ChatPrompt, type TextPrompt } from "../src/index.js";
 
 describe("round-trip", () => {
   test("text prompts", () => {
-    const original = prompt("Hello {{name}}, \\{{literal}}");
+    const original = textPrompt("Hello {{name}}, \\{{literal}}");
     const loaded = fromJSON<typeof original>(JSON.stringify(original));
     expect(loaded.kind).toBe("text");
     expect(loaded.variables).toEqual(original.variables);
@@ -16,6 +16,13 @@ describe("round-trip", () => {
     const vars = { tone: "brief", q: "Why?", history: [{ role: "user" as const, content: "Hi" }] };
     expect(loaded.format(vars)).toEqual(original.format(vars));
     expect(JSON.stringify(loaded)).toBe(JSON.stringify(original));
+  });
+
+  test("loaded message templates can format", () => {
+    const loaded = fromJSON(JSON.stringify(chatPrompt([user("Hi {{name}}")])));
+    if (loaded.kind !== "chat") throw new Error("expected a chat prompt");
+    const [part] = loaded.parts;
+    expect(part?.type === "message" && part.format({ name: "Ada" })).toEqual({ role: "user", content: "Hi Ada" });
   });
 
   test("accepts an already parsed object", () => {

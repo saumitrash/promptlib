@@ -9,7 +9,7 @@ export interface TextPrompt<V> {
   toJSON(): PromptJSON;
 }
 
-export function prompt<const T extends string>(template: T): TextPrompt<TemplateVars<T>> {
+export function textPrompt<const T extends string>(template: T): TextPrompt<TemplateVars<T>> {
   const segments = parse(template);
   return {
     kind: "text",

@@ -19,9 +19,9 @@ await writeFile(join(scratch, "package.json"), JSON.stringify({ type: "module", 
 await writeFile(
   join(scratch, "consumer.mjs"),
   `import assert from "node:assert/strict";
-import { assistant, chatPrompt, fromJSON, messages, prompt, registry, system, toOpenAI, user } from "${pkg.name}";
+import { assistant, chatPrompt, fromJSON, messages, textPrompt, registry, system, toOpenAI, user } from "${pkg.name}";
 
-const greet = prompt("Hello {{name}}.");
+const greet = textPrompt("Hello {{name}}.");
 assert.equal(greet.format({ name: "Ada" }), "Hello Ada.");
 assert.equal(fromJSON(JSON.stringify(greet)).format({ name: "Ada" }), "Hello Ada.");
 
@@ -41,9 +41,9 @@ console.log("runtime ok on node " + process.version);
 
 await writeFile(
   join(scratch, "consumer.ts"),
-  `import { chatPrompt, messages, prompt, system, type Message } from "${pkg.name}";
+  `import { chatPrompt, messages, textPrompt, system, type Message } from "${pkg.name}";
 
-const greet = prompt("Hello {{name}}.");
+const greet = textPrompt("Hello {{name}}.");
 const text: string = greet.format({ name: "Ada" });
 // @ts-expect-error missing variable
 greet.format({});
