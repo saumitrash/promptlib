@@ -18,6 +18,13 @@ describe("round-trip", () => {
     expect(JSON.stringify(loaded)).toBe(JSON.stringify(original));
   });
 
+  test("loaded message templates can format", () => {
+    const loaded = fromJSON(JSON.stringify(chatPrompt([user("Hi {{name}}")])));
+    if (loaded.kind !== "chat") throw new Error("expected a chat prompt");
+    const [part] = loaded.parts;
+    expect(part?.type === "message" && part.format({ name: "Ada" })).toEqual({ role: "user", content: "Hi Ada" });
+  });
+
   test("accepts an already parsed object", () => {
     const loaded = fromJSON({ version: 1, kind: "text", template: "{{a}}" });
     expect(loaded.variables).toEqual(["a"]);

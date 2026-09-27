@@ -7,6 +7,8 @@ const js = (p: unknown) =>
     formatText(vars: object, options?: FormatOptions): string;
   };
 
+const jsMessage = (p: unknown) => p as { format(vars: object, options?: FormatOptions): Message };
+
 const warn = spyOn(console, "warn").mockImplementation(() => {});
 afterEach(() => warn.mockClear());
 
@@ -115,5 +117,51 @@ describe("formatText", () => {
     expect(chat.formatText({ tone: "kind", history })).toBe(
       "System: Be kind.\n\nUser: Hi\n\nAssistant: Hello!\n\nUser: Bye",
     );
+  });
+});
+
+describe("message templates", () => {
+  test("format() renders one message", () => {
+    expect(user("Hi {{name}}").format({ name: "Ada" })).toEqual({ role: "user", content: "Hi Ada" });
+    expect(system("Be brief.").format()).toEqual({ role: "system", content: "Be brief." });
+    expect(assistant("{{n}} items").format({ n: 3 })).toEqual({ role: "assistant", content: "3 items" });
+  });
+
+  test("format() reports missing variables", () => {
+    expect(jsMessage(user("Hi {{name}}")).format({})).toEqual({ role: "user", content: "Hi {{name}}" });
+    expect(warn).toHaveBeenCalledWith('[promptlib] Missing variable "name"');
+    expect(() => jsMessage(user("{{a}}")).format({}, { onMissing: "throw" })).toThrow('Missing variable "a"');
+  });
+
+  test("placeholder errors surface when the template is created", () => {
+    expect(() => user("{{bad name}}")).toThrow(/Invalid placeholder name/);
+  });
+
+  test("formatted messages fill a messages slot", () => {
+    const chat = chatPrompt([messages("history"), user("{{q}}")]);
+    const turns = [system("how do I help you").format(), user("Hi {{name}}").format({ name: "Ada" })];
+    expect(chat.format({ history: turns, q: "Why?" })).toEqual([
+      { role: "system", content: "how do I help you" },
+      { role: "user", content: "Hi Ada" },
+      { role: "user", content: "Why?" },
+    ]);
+  });
+
+  test("an unformatted template in a messages slot throws with a hint", () => {
+    const chat = chatPrompt([messages("history")]);
+    expect(() => js(chat).format({ history: [user("hi")] })).toThrow(
+      '[promptlib] Variable "history" item 0 is a message template. Call .format() on it first.',
+    );
+  });
+
+  test("toJSON keeps parts as plain data", () => {
+    const chat = chatPrompt([system("Be {{tone}}."), messages("history")]);
+    const json = chat.toJSON();
+    if (json.kind !== "chat") throw new Error("expected a chat prompt");
+    expect(json.parts).toEqual([
+      { type: "message", role: "system", template: "Be {{tone}}." },
+      { type: "messages", name: "history" },
+    ]);
+    expect(Object.keys(json.parts[0]!)).toEqual(["type", "role", "template"]);
   });
 });

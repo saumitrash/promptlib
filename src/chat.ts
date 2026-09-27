@@ -10,6 +10,7 @@ import {
   type Segment,
   type Simplify,
   type NoVars,
+  type TemplateVars,
   type Value,
 } from "./template.js";
 
@@ -24,6 +25,7 @@ export interface MessageTemplate<R extends Role = Role, T extends string = strin
   readonly type: "message";
   readonly role: R;
   readonly template: T;
+  format(...args: FormatArgs<TemplateVars<T>>): { role: R; content: string };
 }
 
 export interface MessagesSlot<N extends string = string> {
@@ -33,23 +35,24 @@ export interface MessagesSlot<N extends string = string> {
 
 export type Part = MessageTemplate | MessagesSlot;
 
-export const system = <const T extends string>(template: T): MessageTemplate<"system", T> => ({
-  type: "message",
-  role: "system",
-  template,
-});
+export function message<R extends Role, T extends string>(role: R, template: T): MessageTemplate<R, T> {
+  const segments = parse(template);
+  return {
+    type: "message",
+    role,
+    template,
+    format: (vars?: Readonly<Record<string, unknown>>, options: FormatOptions = {}) => ({
+      role,
+      content: render(segments, vars ?? {}, options),
+    }),
+  };
+}
 
-export const user = <const T extends string>(template: T): MessageTemplate<"user", T> => ({
-  type: "message",
-  role: "user",
-  template,
-});
+export const system = <const T extends string>(template: T) => message("system", template);
 
-export const assistant = <const T extends string>(template: T): MessageTemplate<"assistant", T> => ({
-  type: "message",
-  role: "assistant",
-  template,
-});
+export const user = <const T extends string>(template: T) => message("user", template);
+
+export const assistant = <const T extends string>(template: T) => message("assistant", template);
 
 export const messages = <const N extends string>(name: N): MessagesSlot<N> => ({ type: "messages", name });
 
@@ -89,6 +92,9 @@ const isMessage = (x: unknown): x is Message =>
   "content" in x &&
   typeof x.content === "string";
 
+const isMessageTemplate = (x: unknown): boolean =>
+  typeof x === "object" && x !== null && "type" in x && x.type === "message";
+
 type Compiled = { role: Role; segments: Segment[] } | { slot: string };
 
 export function chatPrompt<const P extends readonly Part[]>(
@@ -116,11 +122,11 @@ export function chatPrompt<const P extends readonly Part[]>(
       }
       if (!Array.isArray(history)) throw new TypeError(`[promptlib] Variable "${c.slot}" must be an array of messages`);
       history.forEach((item: unknown, i) => {
-        if (!isMessage(item)) {
-          throw new TypeError(
-            `[promptlib] Variable "${c.slot}" item ${i} is not a message. Expected { role, content } with role system, user, or assistant.`,
-          );
-        }
+        if (isMessage(item)) return;
+        const problem = isMessageTemplate(item)
+          ? "is a message template. Call .format() on it first."
+          : "is not a message. Expected { role, content } with role system, user, or assistant.";
+        throw new TypeError(`[promptlib] Variable "${c.slot}" item ${i} ${problem}`);
       });
       return history;
     });
@@ -137,6 +143,14 @@ export function chatPrompt<const P extends readonly Part[]>(
       format(vars, options)
         .map((m) => `${LABELS[m.role]}: ${m.content}`)
         .join("\n\n"),
-    toJSON: () => ({ version: 1, kind: "chat", parts: parts.map((part) => ({ ...part })) }),
+    toJSON: () => ({
+      version: 1,
+      kind: "chat",
+      parts: parts.map((part) =>
+        part.type === "message"
+          ? { type: "message", role: part.role, template: part.template }
+          : { type: "messages", name: part.name },
+      ),
+    }),
   };
 }

@@ -49,6 +49,21 @@ support.formatText(vars);
 - `messages("history")` is a slot for a `Message[]`, spliced in as is. History content is not treated as a template. An item that is not a `{ role, content }` message throws.
 - A name used as both a text placeholder and a slot is a type error, and throws at definition time.
 
+To build history in code, call `.format()` on a message template. It returns one `Message`, with the same variable checking as a prompt.
+
+```ts
+support.format({
+  persona: "support agent",
+  question: "Where is my order?",
+  history: [
+    user("Hi, I'm {{name}}.").format({ name: "Ada" }),
+    assistant("Hi Ada, how can I help?").format(),
+  ],
+});
+```
+
+A template passed to a slot without `.format()` is a type error, and throws at runtime.
+
 ## Missing variables
 
 With literal templates the compiler catches missing variables. For plain JS callers and prompts loaded from JSON, `format` checks at runtime. By default it warns once per variable and leaves `{{name}}` in the output so the gap is visible.

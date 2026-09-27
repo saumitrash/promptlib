@@ -99,3 +99,14 @@ if (untyped.kind === "chat") untyped.format({ anything: "goes" });
 toOpenAI(chat.format({ persona: "p", question: "q", history: [] }), { systemRole: "developer" });
 // @ts-expect-error unknown system role
 toOpenAI([], { systemRole: "admin" });
+
+const greetUser = user("Hi {{name}}");
+assert<Equal<ReturnType<typeof greetUser.format>, { role: "user"; content: string }>>();
+const formatted: Message = greetUser.format({ name: "Ada" });
+// @ts-expect-error message template keeps its variable types
+greetUser.format();
+// @ts-expect-error no placeholders means no variables
+system("static").format({ extra: 1 });
+chat.format({ persona: "p", question: "q", history: [system("s").format(), assistant("a").format()] });
+// @ts-expect-error history takes messages, not templates
+chat.format({ persona: "p", question: "q", history: [system("s")] });
